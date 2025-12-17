@@ -39,109 +39,124 @@ Touches on empty/transparent areas pass through to the app below. Touches on you
 ### SwiftUI
 
 ```swift
-import SwiftUI
 import UniversalOverlays
 
-@main
-struct MyApp: App {
-    @State private var overlayWindow: PassThroughWindow?
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .onAppear {
-                    setupOverlay()
-                }
-        }
-    }
-
-    private func setupOverlay() {
-        guard let windowScene = UIApplication.shared.connectedScenes
-            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else { return }
-
-        let overlay = PassThroughWindow(windowScene: windowScene)
-        overlay.windowLevel = .statusBar + 1
-        overlay.rootViewController = UIHostingController(rootView: FPSOverlay())
-        overlay.rootViewController?.view.backgroundColor = .clear
-        overlay.isHidden = false
-
-        overlayWindow = overlay
-    }
-}
-
-struct FPSOverlay: View {
-    @State private var fps: Int = 60
-
-    var body: some View {
-        VStack {
-            HStack {
-                Spacer()
-                Text("\(fps) FPS")
-                    .font(.caption.monospaced())
-                    .padding(6)
-                    .background(.black.opacity(0.7))
-                    .foregroundStyle(.green)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .padding(8)
-            }
+// Show an overlay
+let overlay = UniversalOverlay.show {
+    VStack {
+        HStack {
             Spacer()
+            Text("60 FPS")
+                .font(.caption.monospaced())
+                .padding(6)
+                .background(.black.opacity(0.7))
+                .foregroundStyle(.green)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .padding(8)
         }
+        Spacer()
     }
 }
+
+// Later, dismiss it
+overlay?.dismiss()
 ```
 
 ### UIKit
 
 ```swift
-import UIKit
 import UniversalOverlays
 
-class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-    var window: UIWindow?
-    var overlayWindow: PassThroughWindow?
+// Show with a view controller
+let overlayVC = MyOverlayViewController()
+overlayVC.view.backgroundColor = .clear
 
-    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options: UIScene.ConnectionOptions) {
-        guard let windowScene = scene as? UIWindowScene else { return }
+let overlay = UniversalOverlay.show(viewController: overlayVC)
 
-        // Main app window
-        window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = MainViewController()
-        window?.makeKeyAndVisible()
+// Later, dismiss it
+overlay?.dismiss()
+```
 
-        // Overlay window
-        let overlay = PassThroughWindow(windowScene: windowScene)
-        overlay.windowLevel = .statusBar + 1
-        overlay.rootViewController = OverlayViewController()
-        overlay.rootViewController?.view.backgroundColor = .clear
-        overlay.isHidden = false
+## Configuration
 
-        overlayWindow = overlay
-    }
+Use `OverlayConfiguration` for advanced customization:
+
+```swift
+let config = OverlayConfiguration(
+    level: .statusBar + 1,        // Window level
+    ignoresSafeArea: true,        // Extend edge-to-edge
+    animationDuration: 0.25,      // Fade in/out duration
+    autoDismissAfter: 5.0         // Auto-dismiss after 5 seconds
+)
+
+let overlay = UniversalOverlay.show(configuration: config) {
+    MyOverlayView()
 }
+```
 
-class OverlayViewController: UIViewController {
-    override func viewDidLoad() {
-        super.viewDidLoad()
+### Presets
 
-        let label = UILabel()
-        label.text = "60 FPS"
-        label.font = .monospacedSystemFont(ofSize: 12, weight: .medium)
-        label.textColor = .green
-        label.backgroundColor = UIColor.black.withAlphaComponent(0.7)
-        label.textAlignment = .center
-        label.layer.cornerRadius = 6
-        label.clipsToBounds = true
-        label.translatesAutoresizingMaskIntoConstraints = false
+```swift
+// Above status bar (default)
+UniversalOverlay.show(configuration: .aboveStatusBar) { ... }
 
-        view.addSubview(label)
-        NSLayoutConstraint.activate([
-            label.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
-            label.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
-            label.widthAnchor.constraint(equalToConstant: 60),
-            label.heightAnchor.constraint(equalToConstant: 24)
-        ])
-    }
-}
+// Above alerts
+UniversalOverlay.show(configuration: .aboveAlerts) { ... }
+
+// Highest possible level
+UniversalOverlay.show(configuration: .topmost) { ... }
+
+// Debug preset: fades in, auto-dismisses after 3s
+UniversalOverlay.show(configuration: .debug) { ... }
+```
+
+### Runtime Control
+
+```swift
+let overlay = UniversalOverlay.show { MyView() }
+
+// Update content
+overlay?.update { UpdatedView() }
+
+// Change window level
+overlay?.setLevel(.alert + 1)
+
+// Schedule auto-dismiss
+overlay?.autoDismiss(after: 10.0)
+
+// Cancel pending auto-dismiss
+overlay?.cancelAutoDismiss()
+
+// Animated dismiss
+overlay?.dismiss(animated: true)
+
+// Access underlying window for advanced customization
+overlay?.overlayWindow?.windowLevel = .normal
+```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|:-------|:-----|:--------|:------------|
+| `level` | `UIWindow.Level` | `.statusBar + 1` | Window z-order |
+| `ignoresSafeArea` | `Bool` | `false` | Extend content edge-to-edge |
+| `animationDuration` | `TimeInterval` | `0` | Fade animation duration |
+| `autoDismissAfter` | `TimeInterval?` | `nil` | Auto-dismiss delay |
+| `windowScene` | `UIWindowScene?` | `nil` | Specific scene to use |
+
+### Manual Setup
+
+For full control, use `PassThroughWindow` directly:
+
+```swift
+guard let scene = UIApplication.shared.connectedScenes
+    .compactMap({ $0 as? UIWindowScene }).first else { return }
+
+let window = PassThroughWindow(windowScene: scene)
+window.windowLevel = .statusBar + 1
+window.rootViewController = UIHostingController(rootView: MyOverlay())
+window.rootViewController?.view.backgroundColor = .clear
+window.isHidden = false
 ```
 
 ## How It Works
