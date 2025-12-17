@@ -15,7 +15,7 @@ import SwiftUI
 // MARK: - Configuration
 
 /// Configuration options for universal overlays.
-public struct OverlayConfiguration {
+public struct OverlayConfiguration: Sendable {
     /// The window level for the overlay.
     public var level: UIWindow.Level
 
@@ -28,22 +28,17 @@ public struct OverlayConfiguration {
     /// Auto-dismiss after this duration. Set to `nil` to disable.
     public var autoDismissAfter: TimeInterval?
 
-    /// The specific window scene to use. If `nil`, uses the foreground active scene.
-    public var windowScene: UIWindowScene?
-
     /// Creates a new overlay configuration.
     public init(
         level: UIWindow.Level = .statusBar + 1,
         ignoresSafeArea: Bool = false,
         animationDuration: TimeInterval = 0,
-        autoDismissAfter: TimeInterval? = nil,
-        windowScene: UIWindowScene? = nil
+        autoDismissAfter: TimeInterval? = nil
     ) {
         self.level = level
         self.ignoresSafeArea = ignoresSafeArea
         self.animationDuration = animationDuration
         self.autoDismissAfter = autoDismissAfter
-        self.windowScene = windowScene
     }
 
     /// Default configuration.
@@ -108,28 +103,31 @@ public final class UniversalOverlay {
     ///
     /// - Parameters:
     ///   - configuration: Configuration options for the overlay.
+    ///   - windowScene: The specific window scene to use. If `nil`, uses the foreground active scene.
     ///   - content: A closure returning the SwiftUI view to display.
     /// - Returns: An `UniversalOverlay` instance to manage the overlay, or `nil` if no window scene is available.
     @discardableResult
     public static func show<Content: View>(
         configuration: OverlayConfiguration = .default,
+        in windowScene: UIWindowScene? = nil,
         @ViewBuilder content: () -> Content
     ) -> UniversalOverlay? {
-        guard let scene = configuration.windowScene ?? activeWindowScene else { return nil }
+        guard let scene = windowScene ?? activeWindowScene else { return nil }
 
         let overlay = UniversalOverlay(configuration: configuration)
         let window = PassThroughWindow(windowScene: scene)
         window.windowLevel = configuration.level
 
+        let contentView = content()
         let wrappedContent = OverlayHostingView(
             ignoresSafeArea: configuration.ignoresSafeArea,
-            content: content
+            content: contentView
         )
 
         let hostingController = UIHostingController(rootView: wrappedContent)
-        hostingController.view.backgroundColor = .clear
+        hostingController.view.backgroundColor = UIColor.clear
         window.rootViewController = hostingController
-        window.backgroundColor = .clear
+        window.backgroundColor = UIColor.clear
 
         overlay.window = window
         overlay.showWindow(animated: configuration.animationDuration > 0)
@@ -157,19 +155,21 @@ public final class UniversalOverlay {
     /// - Parameters:
     ///   - viewController: The view controller to display. Its view background should be clear.
     ///   - configuration: Configuration options for the overlay.
+    ///   - windowScene: The specific window scene to use. If `nil`, uses the foreground active scene.
     /// - Returns: An `UniversalOverlay` instance to manage the overlay, or `nil` if no window scene is available.
     @discardableResult
     public static func show(
         viewController: UIViewController,
-        configuration: OverlayConfiguration = .default
+        configuration: OverlayConfiguration = .default,
+        in windowScene: UIWindowScene? = nil
     ) -> UniversalOverlay? {
-        guard let scene = configuration.windowScene ?? activeWindowScene else { return nil }
+        guard let scene = windowScene ?? activeWindowScene else { return nil }
 
         let overlay = UniversalOverlay(configuration: configuration)
         let window = PassThroughWindow(windowScene: scene)
         window.windowLevel = configuration.level
         window.rootViewController = viewController
-        window.backgroundColor = .clear
+        window.backgroundColor = UIColor.clear
 
         overlay.window = window
         overlay.showWindow(animated: configuration.animationDuration > 0)
@@ -218,13 +218,14 @@ public final class UniversalOverlay {
     public func update<Content: View>(@ViewBuilder content: () -> Content) {
         guard let window else { return }
 
+        let contentView = content()
         let wrappedContent = OverlayHostingView(
             ignoresSafeArea: configuration.ignoresSafeArea,
-            content: content
+            content: contentView
         )
 
         let hostingController = UIHostingController(rootView: wrappedContent)
-        hostingController.view.backgroundColor = .clear
+        hostingController.view.backgroundColor = UIColor.clear
         window.rootViewController = hostingController
     }
 
@@ -286,14 +287,14 @@ public final class UniversalOverlay {
 
 private struct OverlayHostingView<Content: View>: View {
     let ignoresSafeArea: Bool
-    @ViewBuilder let content: () -> Content
+    let content: Content
 
     var body: some View {
         if ignoresSafeArea {
-            content()
+            content
                 .ignoresSafeArea()
         } else {
-            content()
+            content
         }
     }
 }

@@ -134,6 +134,15 @@ overlay?.dismiss(animated: true)
 overlay?.overlayWindow?.windowLevel = .normal
 ```
 
+### Specific Window Scene
+
+```swift
+// Show in a specific window scene
+UniversalOverlay.show(in: myWindowScene) {
+    MyOverlayView()
+}
+```
+
 ### Configuration Options
 
 | Option | Type | Default | Description |
@@ -142,7 +151,6 @@ overlay?.overlayWindow?.windowLevel = .normal
 | `ignoresSafeArea` | `Bool` | `false` | Extend content edge-to-edge |
 | `animationDuration` | `TimeInterval` | `0` | Fade animation duration |
 | `autoDismissAfter` | `TimeInterval?` | `nil` | Auto-dismiss delay |
-| `windowScene` | `UIWindowScene?` | `nil` | Specific scene to use |
 
 ### Manual Setup
 
