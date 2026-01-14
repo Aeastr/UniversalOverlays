@@ -1,36 +1,42 @@
 <div align="center">
+  <img width="128" height="128" src="/resources/icon.png" alt="UniversalOverlays Icon">
   <h1><b>UniversalOverlays</b></h1>
   <p>
-    A UIWindow subclass that allows touch events to pass through non-content areas.
+    Display SwiftUI and UIKit content above your entire app with configurable window levels.
   </p>
 </div>
 
 <p align="center">
-  <a href="https://developer.apple.com/ios/"><img src="https://img.shields.io/badge/iOS-17%2B-purple.svg" alt="iOS 17+"></a>
-  <a href="https://swift.org/"><img src="https://img.shields.io/badge/Swift-6.0-orange.svg" alt="Swift 6.0"></a>
+  <a href="https://swift.org"><img src="https://img.shields.io/badge/Swift-6.0+-F05138?logo=swift&logoColor=white" alt="Swift 6.0+"></a>
+  <a href="https://developer.apple.com"><img src="https://img.shields.io/badge/iOS-17+-000000?logo=apple" alt="iOS 17+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
 </p>
 
-A lightweight UIWindow that creates "hole-punch" touch behavior - touches on empty areas pass through to underlying windows, while touches on actual content are handled normally.
 
-## Use Cases
+## Overview
 
-- FPS counters and debug overlays
-- Floating UI elements (tooltips, indicators)
-- Modal overlays that shouldn't block background touches
-- Any always-on-top UI that needs to coexist with normal interaction
+Create always-on-top overlays for SwiftUI and UIKit with a simple API. Touches on empty/transparent areas automatically pass through to underlying windows.
+
+- Simple `UniversalOverlay.show { }` API for SwiftUI and UIKit
+- Configurable window levels (above status bar, alerts, or topmost)
+- Auto-dismiss, animations, and runtime control
+- Pass-through touch on empty areas—overlays don't block interaction
+
 
 ## Installation
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Aeastr/UniversalOverlays", from: "1.0.0")
+    .package(url: "https://github.com/Aeastr/UniversalOverlays.git", from: "1.0.0")
 ]
 ```
 
 ```swift
 import UniversalOverlays
 ```
+
+Or in Xcode: **File > Add Packages…** and enter `https://github.com/Aeastr/UniversalOverlays`
+
 
 ## Usage
 
@@ -39,9 +45,6 @@ Touches on empty/transparent areas pass through to the app below. Touches on you
 ### SwiftUI
 
 ```swift
-import UniversalOverlays
-
-// Show an overlay
 let overlay = UniversalOverlay.show {
     VStack {
         HStack {
@@ -65,21 +68,17 @@ overlay?.dismiss()
 ### UIKit
 
 ```swift
-import UniversalOverlays
-
-// Show with a view controller
 let overlayVC = MyOverlayViewController()
 overlayVC.view.backgroundColor = .clear
 
 let overlay = UniversalOverlay.show(viewController: overlayVC)
-
-// Later, dismiss it
 overlay?.dismiss()
 ```
 
-## Configuration
 
-Use `OverlayConfiguration` for advanced customization:
+## Customization
+
+### Configuration
 
 ```swift
 let config = OverlayConfiguration(
@@ -94,20 +93,20 @@ let overlay = UniversalOverlay.show(configuration: config) {
 }
 ```
 
+| Option | Type | Default | Description |
+|:-------|:-----|:--------|:------------|
+| `level` | `UIWindow.Level` | `.statusBar + 1` | Window z-order |
+| `ignoresSafeArea` | `Bool` | `false` | Extend content edge-to-edge |
+| `animationDuration` | `TimeInterval` | `0` | Fade animation duration |
+| `autoDismissAfter` | `TimeInterval?` | `nil` | Auto-dismiss delay |
+
 ### Presets
 
 ```swift
-// Above status bar (default)
-UniversalOverlay.show(configuration: .aboveStatusBar) { ... }
-
-// Above alerts
+UniversalOverlay.show(configuration: .aboveStatusBar) { ... }  // Default
 UniversalOverlay.show(configuration: .aboveAlerts) { ... }
-
-// Highest possible level
-UniversalOverlay.show(configuration: .topmost) { ... }
-
-// Debug preset: fades in, auto-dismisses after 3s
-UniversalOverlay.show(configuration: .debug) { ... }
+UniversalOverlay.show(configuration: .topmost) { ... }         // Highest level
+UniversalOverlay.show(configuration: .debug) { ... }           // Auto-dismisses after 3s
 ```
 
 ### Runtime Control
@@ -115,42 +114,20 @@ UniversalOverlay.show(configuration: .debug) { ... }
 ```swift
 let overlay = UniversalOverlay.show { MyView() }
 
-// Update content
-overlay?.update { UpdatedView() }
-
-// Change window level
-overlay?.setLevel(.alert + 1)
-
-// Schedule auto-dismiss
-overlay?.autoDismiss(after: 10.0)
-
-// Cancel pending auto-dismiss
-overlay?.cancelAutoDismiss()
-
-// Animated dismiss
-overlay?.dismiss(animated: true)
-
-// Access underlying window for advanced customization
-overlay?.overlayWindow?.windowLevel = .normal
+overlay?.update { UpdatedView() }           // Update content
+overlay?.setLevel(.alert + 1)               // Change window level
+overlay?.autoDismiss(after: 10.0)           // Schedule auto-dismiss
+overlay?.cancelAutoDismiss()                // Cancel pending auto-dismiss
+overlay?.dismiss(animated: true)            // Animated dismiss
 ```
 
 ### Specific Window Scene
 
 ```swift
-// Show in a specific window scene
 UniversalOverlay.show(in: myWindowScene) {
     MyOverlayView()
 }
 ```
-
-### Configuration Options
-
-| Option | Type | Default | Description |
-|:-------|:-----|:--------|:------------|
-| `level` | `UIWindow.Level` | `.statusBar + 1` | Window z-order |
-| `ignoresSafeArea` | `Bool` | `false` | Extend content edge-to-edge |
-| `animationDuration` | `TimeInterval` | `0` | Fade animation duration |
-| `autoDismissAfter` | `TimeInterval?` | `nil` | Auto-dismiss delay |
 
 ### Manual Setup
 
@@ -167,12 +144,23 @@ window.rootViewController?.view.backgroundColor = .clear
 window.isHidden = false
 ```
 
+
 ## How It Works
 
-`PassThroughWindow` overrides `hitTest(_:with:)` to check whether a touch lands on actual content or just the background. If the touch only hits the root view's background, it returns `nil`, passing the touch through to underlying windows.
+`PassThroughWindow` overrides `hitTest(_:with:)` to determine if touches should pass through:
 
-On iOS 18+, additional logic iterates through subviews to better detect content boundaries.
+- **Pre-iOS 18**: Checks if the touch hit only the root view's background. If so, returns `nil` to pass through.
+- **iOS 18+**: Iterates through subviews in reverse order to find actual content, as hit testing behavior changed in iOS 18.
+- **iOS 26+**: View hierarchy traversal no longer available. Samples the pixel alpha at the touch point and passes through if transparent (alpha < 0.01).
+
+The iOS 26 pixel-sampling approach works but isn't ideal. If you know of a better method, contributions are welcome.
+
+
+## Contributing
+
+Contributions welcome. Please feel free to submit a Pull Request.
+
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE) for details.

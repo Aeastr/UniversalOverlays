@@ -1,0 +1,155 @@
+{
+  "fill" : {
+    "automatic-gradient" : "display-p3:0.97255,0.46798,0.49776,1.00000"
+  },
+  "groups" : [
+    {
+      "blur-material" : 0.2,
+      "layers" : [
+        {
+          "fill" : {
+            "solid" : "extended-gray:1.00000,1.00000"
+          },
+          "glass" : true,
+          "image-name-specializations" : [
+            {
+              "value" : "BottomTrailingBit.png"
+            },
+            {
+              "idiom" : "square",
+              "value" : "rect.png"
+            }
+          ],
+          "name" : "rect",
+          "opacity" : 1,
+          "position-specializations" : [
+            {
+              "value" : {
+                "scale" : 0.25,
+                "translation-in-points" : [
+                  145,
+                  145
+                ]
+              }
+            },
+            {
+              "idiom" : "square",
+              "value" : {
+                "scale" : 0.5,
+                "translation-in-points" : [
+                  100,
+                  100
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.6
+      }
+    },
+    {
+      "blur-material" : 0.2,
+      "hidden" : false,
+      "layers" : [
+        {
+          "fill" : {
+            "solid" : "extended-gray:1.00000,1.00000"
+          },
+          "glass" : true,
+          "image-name-specializations" : [
+            {
+              "value" : "TopLeadingBit.png"
+            },
+            {
+              "idiom" : "square",
+              "value" : "rect.png"
+            }
+          ],
+          "name" : "rect",
+          "opacity" : 1,
+          "position-specializations" : [
+            {
+              "value" : {
+                "scale" : 0.25,
+                "translation-in-points" : [
+                  -145,
+                  -145
+                ]
+              }
+            },
+            {
+              "idiom" : "square",
+              "value" : {
+                "scale" : 0.5,
+                "translation-in-points" : [
+                  -100,
+                  -100
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "opacity" : 0.8,
+      "position" : {
+        "scale" : 1,
+        "translation-in-points" : [
+          0,
+          0
+        ]
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.6
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.6
+      }
+    },
+    {
+      "blur-material" : null,
+      "hidden" : false,
+      "layers" : [
+        {
+          "fill" : {
+            "solid" : "extended-gray:1.00000,1.00000"
+          },
+          "hidden" : false,
+          "image-name" : "Grid.png",
+          "name" : "Grid",
+          "opacity" : 0.2,
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "none",
+        "opacity" : 0.5
+      },
+      "specular" : false,
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

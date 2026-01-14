@@ -43,11 +43,10 @@ public class PassThroughWindow: UIWindow {
     /// hit the root view controller's background. If so, it returns `nil` to pass
     /// the touch through to underlying windows.
     ///
-    /// The method works as follows:
-    /// 1. Performs standard hit testing to find the touched view
-    /// 2. Checks if we have a valid hit view and root view controller
-    /// 3. On iOS 18+, iterates through subviews to find actual content
-    /// 4. Returns `nil` if the touch is only on the background, allowing pass-through
+    /// The method uses different strategies depending on iOS version:
+    /// - Pre-iOS 18: Checks if touch hit only the root view background
+    /// - iOS 18+: Iterates through subviews to find actual content
+    /// - iOS 26+: Samples pixel alpha at touch point (hierarchy traversal unavailable)
     ///
     /// - Parameters:
     ///   - point: The touch point in the window's coordinate system
@@ -60,23 +59,71 @@ public class PassThroughWindow: UIWindow {
             return nil
         }
 
-        // Enhanced hit testing for iOS 18+ to better detect content areas
-        if #available(iOS 18, *) {
-            // Check subviews in reverse order (top to bottom) to find actual content
-            for subview in rootView.subviews.reversed() {
-                // Convert the touch point to the subview's coordinate system
-                let pointInSubView = subview.convert(point, from: rootView)
+        // iOS 26+: Can't traverse view hierarchy, use pixel alpha instead
+        if #available(iOS 26, *) {
+            if hitView == rootView {
+                if rootView.colorOfPoint(point).alpha < 0.01 {
+                    return nil
+                }
+            }
+            return hitView
+        }
 
-                // If the subview contains actual content at this point, handle the touch normally
+        // iOS 18+: Iterate through subviews to find actual content
+        if #available(iOS 18, *) {
+            for subview in rootView.subviews.reversed() {
+                let pointInSubView = subview.convert(point, from: rootView)
                 if subview.hitTest(pointInSubView, with: event) != nil {
                     return hitView
                 }
             }
         }
 
-        // If the hit view is only the root view (background), pass the touch through
-        // Otherwise, return the hit view to handle the touch normally
+        // Pre-iOS 18: Pass through if touch is only on root view background
         return hitView == rootView ? nil : hitView
+    }
+}
+
+// MARK: - Pixel-Alpha Check Helpers
+
+fileprivate extension UIView {
+    func colorOfPoint(_ point: CGPoint) -> UIColor {
+        guard bounds.contains(point) else {
+            return .clear
+        }
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
+
+        var pixelData: [UInt8] = [0, 0, 0, 0]
+
+        guard let context = CGContext(
+            data: &pixelData,
+            width: 1,
+            height: 1,
+            bitsPerComponent: 8,
+            bytesPerRow: 4,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo.rawValue
+        ) else {
+            return .clear
+        }
+
+        context.translateBy(x: -point.x, y: -point.y)
+        layer.render(in: context)
+
+        let red   = CGFloat(pixelData[0]) / 255.0
+        let green = CGFloat(pixelData[1]) / 255.0
+        let blue  = CGFloat(pixelData[2]) / 255.0
+        let alpha = CGFloat(pixelData[3]) / 255.0
+
+        return UIColor(red: red, green: green, blue: blue, alpha: alpha)
+    }
+}
+
+fileprivate extension UIColor {
+    var alpha: CGFloat {
+        cgColor.alpha
     }
 }
 #endif
