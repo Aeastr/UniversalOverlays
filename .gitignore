@@ -34,3 +34,6 @@ fastlane/test_output
 
 # Code Injection
 iOSInjectionProject/
+
+# macOS folder icon
+Icon?
